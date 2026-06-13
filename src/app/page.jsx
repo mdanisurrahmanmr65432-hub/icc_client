@@ -1,0 +1,420 @@
+'use client';
+import useAxios from '@/hook/useAxios';
+import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
+import React, { useRef, useState } from 'react';
+import { CiTrash } from 'react-icons/ci';
+import { MdLocalPhone, MdNavigateBefore, MdNavigateNext } from 'react-icons/md';
+import Swal from 'sweetalert2';
+
+export default function ResponsiveClientList() {
+  const instance = useAxios();
+  const modal = useRef();
+  const [getNumber, setGetNumber] = useState('');
+  
+  // ৪টি আলাদা ফিল্ডের জন্য স্টেট
+  const [filters, setFilters] = useState({
+    name: '',
+    mobile: '',
+    ip: '',
+    address: ''
+  });
+  const [page, setPage] = useState(1);
+  const limit = 10; // প্রতি পেজে ১০টি করে ডেটা দেখাবে
+
+  // সার্ভার যেহেতু কোনো কুয়েরি ছাড়া সব ডেটা দেয়, আমরা সরাসরি সব ডেটা নিয়ে আসব
+  const { data: allClients = [], refetch, isLoading } = useQuery({
+    queryKey: ['client-tables'],
+    queryFn: async () => {
+      const res = await instance.get('/get-client-data');
+      return res.data; // সরাসরি অ্যারে রিটার্ন হচ্ছে
+    },
+  });
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setPage(1); // সার্চ পরিবর্তন করলে প্রথম পেজে ফিরে যাবে
+  };
+
+  // ক্লায়েন্ট সাইডেই (Frontend) ফিল্টারিং করা হচ্ছে আপনার ৪টি ফিল্ড দিয়ে
+  const filteredClients = allClients.filter(client => {
+    const matchesName = client?.client_name?.toLowerCase().includes(filters.name.toLowerCase());
+    const matchesMobile = client?.mobile?.toLowerCase().includes(filters.mobile.toLowerCase());
+    const matchesIp = client?.ip?.toLowerCase().includes(filters.ip.toLowerCase());
+    const matchesAddress = client?.address?.toLowerCase().includes(filters.address.toLowerCase());
+    
+    return matchesName && matchesMobile && matchesIp && matchesAddress;
+  });
+
+  // ক্লায়েন্ট সাইডেই প্যাগিনেশন হিসাব করা হচ্ছে
+  const totalClients = filteredClients.length;
+  const totalPages = Math.ceil(totalClients / limit) || 1;
+  
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const clientsData = filteredClients.slice(startIndex, endIndex); // বর্তমান পেজের ১০টি ডেটা
+
+  const handleStatusUpdate = async (id, status) => {
+    const sat = status === 'Active' ? 'Inactive' : 'Active';
+    await instance.patch('update-status', { id, status: sat });
+    refetch();
+  };
+
+  const handleModal = (num) => {
+    modal.current.showModal();
+    setGetNumber(num);
+  };
+
+  const handleDelete = async (id) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await instance.delete(`delete-client/${id}`);
+        Swal.fire({
+          title: 'Deleted!',
+          text: 'Your file has been deleted.',
+          icon: 'success',
+        });
+        refetch();
+      }
+    });
+  };
+
+  return (
+    <div>
+      <div className="container mx-auto p-4 md:p-6 bg-gray-50 min-h-screen">
+        {/* Header section */}
+        <div className="mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+              ISP Client Management
+            </h1>
+            <p className="text-xs md:text-sm text-gray-500">
+              Manage network subscribers layout optimized for all screens
+            </p>
+          </div>
+
+          {/* ৪টি আলাদা সার্চ ফিল্ড */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full lg:w-auto flex-grow max-w-4xl">
+            <input
+              type="text"
+              name="name"
+              value={filters.name}
+              onChange={handleFilterChange}
+              placeholder="Search by Name..."
+              className="w-full px-3 py-1.5 md:py-2 text-xs md:text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+            />
+            <input
+              type="text"
+              name="mobile"
+              value={filters.mobile}
+              onChange={handleFilterChange}
+              placeholder="Search by Mobile..."
+              className="w-full px-3 py-1.5 md:py-2 text-xs md:text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+            />
+            <input
+              type="text"
+              name="ip"
+              value={filters.ip}
+              onChange={handleFilterChange}
+              placeholder="Search by IP..."
+              className="w-full px-3 py-1.5 md:py-2 text-xs md:text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+            />
+            <input
+              type="text"
+              name="address"
+              value={filters.address}
+              onChange={handleFilterChange}
+              placeholder="Search by Address..."
+              className="w-full px-3 py-1.5 md:py-2 text-xs md:text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+            />
+          </div>
+
+          {/* Total Clients Badge */}
+          <div className="bg-blue-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow text-xs md:text-sm font-medium text-center whitespace-nowrap self-stretch sm:self-auto flex items-center justify-center">
+            Total Clients: {totalClients}
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <Link href={'/post'} className="btn btn-info text-white">
+            Add New
+          </Link>
+        </div>
+
+        {/* --- LOADING ANIMATION --- */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center min-h-[400px] bg-white rounded-xl shadow-md border border-gray-100">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+            <p className="text-gray-500 font-medium animate-pulse text-sm">Loading Client Data, Please wait...</p>
+          </div>
+        ) : clientsData.length === 0 ? (
+          /* --- NO DATA FOUND --- */
+          <div className="flex flex-col items-center justify-center min-h-[400px] bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <p className="text-gray-400 text-lg font-semibold">No Clients Found</p>
+            <p className="text-gray-400 text-xs mt-1">Try adjusting your search criteria</p>
+          </div>
+        ) : (
+          <>
+            {/* 1. Mobile Box/Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+              {clientsData.map(client => (
+                <div
+                  key={client?._id}
+                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3"
+                >
+                  <div className="flex flex-col justify-between items-start">
+                    <div>
+                      <span className="text-xs font-mono text-gray-400 mr-1">
+                        #{client?.sl}
+                      </span>
+                      <h3 className="text-base font-bold text-gray-800 inline-block">
+                        {client?.client_name}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-0.5">{client.zone}</p>
+                    </div>
+                    <div className="flex gap-3 mt-2">
+                      <span
+                        onClick={() => handleStatusUpdate(client?._id, client?.status)}
+                        className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium border btn btn-xs ${
+                          client?.status === 'Active'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : 'bg-red-50 text-red-700 border-red-200'
+                        }`}
+                      >
+                        {client?.status}
+                      </span>
+                      <button
+                        onClick={() => handleDelete(client?._id)}
+                        className="btn btn-xs"
+                      >
+                        <CiTrash />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs border-y border-gray-100 py-2.5 my-0.5">
+                    <div>
+                      <span className="text-gray-400 block mb-0.5">IP Address</span>
+                      <span className="font-mono font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                        {client?.ip}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5">Speed</span>
+                      <span className="font-semibold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
+                        {client?.speed}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 flex flex-col gap-1">
+                      <div>
+                        <span className="text-gray-400 block mb-0.5">Mobile</span>
+                        <span className="font-mono text-gray-700">
+                          {client?.mobile}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleModal(client?.mobile)}
+                        className="btn btn-xs w-fit"
+                      >
+                        <MdLocalPhone />
+                      </button>
+                    </div>
+                    <div className="mt-1.5">
+                      <span className="text-gray-400 block mb-0.5">Bill Amount</span>
+                      <span className="font-bold text-gray-900">
+                        ৳{client?.amount}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs flex flex-col gap-1 text-gray-500">
+                    <p>
+                      <strong className="text-gray-700">Address:</strong>{' '}
+                      {client?.address}
+                    </p>
+                    <p className="text-[11px] text-gray-400 self-end mt-1">
+                      Connected: {client?.connection_date}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 2. Desktop Table View */}
+            <div className="hidden md:block bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 text-gray-700 text-xs uppercase font-semibold tracking-wider border-b border-gray-200">
+                      <th className="py-4 px-4 text-center">SL</th>
+                      <th className="py-4 px-4">Client Name</th>
+                      <th className="py-4 px-4">Address</th>
+                      <th className="py-4 px-4">Mobile</th>
+                      <th className="py-4 px-4">IP Address</th>
+                      <th className="py-4 px-4">Zone</th>
+                      <th className="py-4 px-4 text-center">Speed</th>
+                      <th className="py-4 px-4 text-right">Amount</th>
+                      <th className="py-4 px-4 text-center">Conn. Date</th>
+                      <th className="py-4 px-4 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-sm text-gray-600">
+                    {clientsData.map(client => (
+                      <tr
+                        key={client?._id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="py-3 px-4 text-center font-medium text-gray-400">
+                          {client?.sl}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-gray-800">
+                          {client?.client_name}
+                        </td>
+                        <td
+                          className="py-3 px-4 max-w-xs truncate"
+                          title={client?.address}
+                        >
+                          {client?.address}
+                        </td>
+                        <td className="py-3 px-4 font-mono text-xs">
+                          <div className="flex items-center gap-2">
+                            <span>{client.mobile}</span>
+                            <button
+                              onClick={() => handleModal(client?.mobile)}
+                              className="btn btn-xs btn-ghost"
+                            >
+                              <MdLocalPhone />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-mono text-xs text-blue-600">
+                          <span className="bg-blue-50 rounded px-1.5 py-0.5">{client?.ip}</span>
+                        </td>
+                        <td className="py-3 px-4 text-gray-500">{client.zone}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span className="bg-purple-100 text-purple-700 font-semibold px-2 py-1 rounded text-xs">
+                            {client?.speed}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right font-semibold text-gray-900">
+                          ৳{client?.amount}
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs text-gray-500">
+                          {client?.connection_date}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            onClick={() => handleStatusUpdate(client?._id, client?.status)}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border btn btn-xs mr-2 ${
+                              client?.status === 'Active'
+                                ? 'bg-green-50 text-green-700 border-green-200'
+                                : 'bg-red-50 text-red-700 border-red-200'
+                            }`}
+                          >
+                            {client?.status}
+                          </span>
+                          <button
+                            onClick={() => handleDelete(client?._id)}
+                            className="btn btn-xs"
+                          >
+                            <CiTrash />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ৩. প্যাগিনেশন বাটন কন্ট্রোল */}
+            <div className="flex justify-center items-center gap-4 mt-6 pb-10">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(prev => prev - 1)}
+                className="btn btn-sm btn-outline flex items-center gap-1"
+              >
+                <MdNavigateBefore size={18} /> Previous
+              </button>
+
+              <span className="text-xs md:text-sm font-semibold text-gray-700">
+                Page {page} of {totalPages}
+              </span>
+
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage(prev => prev + 1)}
+                className="btn btn-sm btn-outline flex items-center gap-1"
+              >
+                Next <MdNavigateNext size={18} />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Modal section */}
+      <dialog ref={modal} className="modal modal-bottom sm:modal-middle">
+        <div className="modal-box relative text-center p-6">
+          <form method="dialog">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+              ✕
+            </button>
+          </form>
+
+          <div className="flex flex-col items-center my-4">
+            <div className="relative flex items-center justify-center h-20 w-20 bg-green-100 text-green-600 rounded-full mb-4 animate-pulse">
+              <svg
+                className="h-10 w-10"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                />
+              </svg>
+            </div>
+
+            <h3 className="font-bold text-lg text-gray-800">
+              Initiating Phone Call
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Are you sure you want to call this number?
+            </p>
+
+            <p className="font-mono text-xl font-bold text-blue-600 mt-3 tracking-wider">
+              {getNumber}
+            </p>
+          </div>
+
+          <div className="modal-action justify-center gap-2">
+            <a
+              href={`tel:${getNumber}`}
+              className="btn btn-success text-white px-6"
+            >
+              Call Now
+            </a>
+            <form method="dialog">
+              <button className="btn btn-outline border-gray-300 text-gray-600 hover:bg-gray-100">
+                Cancel
+              </button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+    </div>
+  );
+}
