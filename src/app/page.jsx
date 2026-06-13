@@ -192,12 +192,12 @@ export default function ResponsiveClientList() {
                       >
                         {client?.status}
                       </span>
-                      <button
+                      {/* <button
                         onClick={() => handleDelete(client?._id)}
                         className="btn btn-xs"
                       >
                         <CiTrash />
-                      </button>
+                      </button> */}
                     </div>
                   </div>
 
@@ -322,12 +322,12 @@ export default function ResponsiveClientList() {
                           >
                             {client?.status}
                           </span>
-                          <button
+                          {/* <button
                             onClick={() => handleDelete(client?._id)}
                             className="btn btn-xs"
                           >
                             <CiTrash />
-                          </button>
+                          </button> */}
                         </td>
                       </tr>
                     ))}
