@@ -10,13 +10,11 @@ import CollectionReportSheet from '@/components/CollectionReportSheet';
 const PaidUsers = () => {
   const instance = useAxios();
   
-  // ফিল্টার এবং ডেট স্টেটসমূহ
   const [filterType, setFilterType] = useState('month'); 
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [apiDates, setApiDates] = useState({ start: '', end: '' });
 
-  // 🕒 ফিল্টার চেঞ্জ ট্র্যাক করার এফেক্ট
   useEffect(() => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -38,7 +36,6 @@ const PaidUsers = () => {
     }
   }, [filterType, customStartDate, customEndDate]);
 
-  // 🔍 ১. ডাটা ফেচিং
   const { data: paymentsLog = [], isLoading } = useQuery({
     queryKey: ['payments-history', apiDates],
     queryFn: async () => {
@@ -50,18 +47,14 @@ const PaidUsers = () => {
     },
   });
 
-  // 📊 ২. টোটাল টাকা হিসাব
   const totalCollected = paymentsLog.reduce((sum, item) => sum + (item.amount || 0), 0);
 
-  // 🖨️ ৩. প্রিন্ট ট্রিগার
   const handlePrint = () => {
     window.print();
   };
 
-  // 📄 ৪. jsPDF দিয়ে ডাউনলোড লজিক
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
-    
     doc.setFontSize(22);
     doc.text('ICC Communication', 105, 15, { align: 'center' });
     doc.setFontSize(14);
@@ -176,65 +169,65 @@ const PaidUsers = () => {
         )}
       </div>
 
-      {/* 📱 ৩. মোবাইল রেসপন্সিভ বক্স/কার্ড মোড লেআউট (শুধুমাত্র মোবাইলে শো করবে) */}
-<div className="grid grid-cols-1 gap-4 md:hidden no-print mb-6">
-  {paymentsLog.length === 0 ? (
-    <div className="bg-white p-6 rounded-xl text-center border border-gray-100 text-gray-400">
-      No payments log found for this range.
-    </div>
-  ) : (
-    paymentsLog.map((payment, idx) => (
-      <div key={payment?._id || idx} className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex flex-col gap-3 relative overflow-hidden">
-        
-        {/* IP Address এর বড় এবং প্রিমিয়াম টপ ব্যানার ডিজাইন */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-2 rounded-lg flex justify-between items-center shadow-sm">
-          <div className="flex items-center gap-1.5">
-            <MdDesktopWindows size={16} className="text-blue-200" />
-            <span className="text-xs font-medium text-blue-100 uppercase tracking-wider">IP</span>
+      {/* 📱 ৩. মোবাইল রেসপন্সিভ বক্স মোড (শুধুমাত্র মোবাইলের স্ক্রিনে ও নরমাল ভিউতে দেখাবে, প্রিন্ট করার সময় হাইড হবে) */}
+      <div className="grid grid-cols-1 gap-4 md:hidden no-print mb-6">
+        {paymentsLog.length === 0 ? (
+          <div className="bg-white p-6 rounded-xl text-center border border-gray-100 text-gray-400">
+            No payments log found for this range.
           </div>
-          <span className="text-base font-black tracking-wide font-mono bg-white/20 px-2.5 py-0.5 rounded-md backdrop-blur-sm shadow-inner">
-            {payment?.ip || 'N/A'}
-          </span>
-        </div>
+        ) : (
+          paymentsLog.map((payment, idx) => (
+            <div key={payment?._id || idx} className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex flex-col gap-3 relative overflow-hidden">
+              
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-2 rounded-lg flex justify-between items-center shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <MdDesktopWindows size={16} className="text-blue-200" />
+                  <span className="text-xs font-medium text-blue-100 uppercase tracking-wider">IP</span>
+                </div>
+                <span className="text-base font-black tracking-wide font-mono bg-white/20 px-2.5 py-0.5 rounded-md backdrop-blur-sm shadow-inner">
+                  {payment?.ip || 'N/A'}
+                </span>
+              </div>
 
-        {/* ক্লায়েন্ট ইনফরমেশন সেকশন */}
-        <div className="flex justify-between items-start pt-1">
-          <div>
-            <h3 className="text-base font-extrabold text-gray-800 tracking-tight">
-              {payment?.client_name}
-            </h3>
-            <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 font-medium">
-              <MdLocationOn size={13} className="text-gray-400" /> {payment?.zone || 'N/A'}
-            </p>
-          </div>
-          <div className="text-right">
-            <span className="text-base font-black text-emerald-600 block tracking-tight">
-              ৳{payment?.amount}/=
-            </span>
-            <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded-md mt-1 inline-block border border-emerald-100">
-              Paid
-            </span>
-          </div>
-        </div>
+              <div className="flex justify-between items-start pt-1">
+                <div>
+                  <h3 className="text-base font-extrabold text-gray-800 tracking-tight">
+                    {payment?.client_name}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 font-medium">
+                    <MdLocationOn size={13} className="text-gray-400" /> 
+                    {/* এখানে সব ধরণের সম্ভাব্য নাম চেক করা হয়েছে যাতে মিস না হয় */}
+                    {payment?.zone || payment?.location || payment?.area || 'N/A'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-black text-emerald-600 block tracking-tight">
+                    ৳{payment?.amount}/=
+                  </span>
+                  <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded-md mt-1 inline-block border border-emerald-100">
+                    Paid
+                  </span>
+                </div>
+              </div>
 
-        {/* রিসিট নম্বর এবং ডেট (নিচের ফুটার পার্ট) */}
-        <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-gray-100 text-gray-500 font-medium">
-          <div className="flex items-center gap-1">
-            <MdReceipt size={14} className="text-indigo-500" />
-            <span>Receipt: <strong className="text-gray-700 font-mono">#{payment?.receiptNo || 'N/A'}</strong></span>
-          </div>
-          <div className="text-right text-gray-400">
-            <span>Date: {payment?.date || 'N/A'}</span>
-          </div>
-        </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-gray-100 text-gray-500 font-medium">
+                <div className="flex items-center gap-1">
+                  <MdReceipt size={14} className="text-indigo-500" />
+                  <span>Receipt: <strong className="text-gray-700 font-mono">#{payment?.receiptNo || 'N/A'}</strong></span>
+                </div>
+                <div className="text-right text-gray-400">
+                  <span>Date: {payment?.date || 'N/A'}</span>
+                </div>
+              </div>
 
+            </div>
+          ))
+        )}
       </div>
-    ))
-  )}
-</div>
 
-      {/* 📝 ৪. ডেক্সটপ এবং প্রিন্ট লেআউট (মাঝারি ও বড় স্ক্রিনে টেবিল দেখাবে, মোবাইলে হাইড থাকবে) */}
-      <div className="hidden md:block">
+      {/* 📝 ৪. ডেক্সটপ শিট এবং প্রিন্ট লেআউট */}
+      {/* (Tailwind এর ক্লাসের বদলে CSS মিডিয়া কুয়েরি স্টাইল দিয়ে প্রিন্ট এনশিওর করা হয়েছে) */}
+      <div className="print-sheet-container">
         <CollectionReportSheet 
           paymentsLog={paymentsLog} 
           totalCollected={totalCollected} 
@@ -243,15 +236,22 @@ const PaidUsers = () => {
         />
       </div>
 
-      {/* প্রিন্ট করার সময় যাতে মোবাইল ভিউ হাইড হয়ে আসল প্রিন্ট শিটটাই প্রিন্ট হয় তার জন্য এই কন্ডিশন */}
-      <div className="visible-print hidden">
-        <CollectionReportSheet 
-          paymentsLog={paymentsLog} 
-          totalCollected={totalCollected} 
-          filterType={filterType}
-          apiDates={apiDates}
-        />
-      </div>
+      {/* প্রিন্ট গ্লিচ ফিক্স করার জন্য গ্লোবাল প্রিন্ট সিএসএস ইন্টিগ্রেশন */}
+      <style jsx global>{`
+        @media print {
+          .no-print {
+            display: none !important;
+          }
+          .print-sheet-container {
+            display: block !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .print-sheet-container {
+            display: none;
+          }
+        }
+      `}</style>
 
     </div>
   );

@@ -1,3 +1,4 @@
+'use client';
 import useAxios from '@/hook/useAxios';
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
@@ -49,24 +50,23 @@ const PaidBtns = ({ client, refetch, className = "" }) => {
       confirmButtonColor: '#10B981',
       cancelButtonColor: '#EF4444',
       focusConfirm: false,
-      // পপআপের ইনপুট ভ্যালিডেশন এবং ডেটা রিড করা
       preConfirm: () => {
         const receiptNo = Swal.getPopup().querySelector('#receiptNo').value.trim();
         if (!receiptNo) {
           Swal.showValidationMessage(`Please enter a Receipt Number`);
         }
-        return { receiptNo }; // এখান থেকে ডাটা পরবর্তী .then এ যাবে
+        return { receiptNo };
       }
     }).then(async (result) => {
-      // যদি ইউজার সাবমিট বাটনে ক্লিক করে এবং রসিদ নম্বর দেয়
       if (result.isConfirmed) {
         const { receiptNo } = result.value;
 
         try {
-          // ব্যাকএন্ডে রিকোয়েস্ট পাঠানো হচ্ছে (বডিতে receiptNo এবং amount দেওয়া হলো)
+          // 👉 ফিক্স: বডিতে এখন 'zone' বা 'location' ডেটাও ব্যাকএন্ডে পাঠানো হচ্ছে যাতে ডাটাবেজে এটি জমা হয়
           const res = await axiosInstance.post(`/payments?paidId=${client?._id}`, {
             amount: client?.amount,
             receiptNo: receiptNo, 
+            zone: client?.zone || client?.location || client?.area || 'N/A', // ক্লায়েন্টের লোকেশন পাস
           });
 
           if (res.data?.success) {
@@ -77,7 +77,6 @@ const PaidBtns = ({ client, refetch, className = "" }) => {
               confirmButtonColor: '#10B981',
             });
 
-            // বাটন ও মেইন ডাটা টেবিল রিফ্রেশ করা
             checkPaidRefetch();
             if (refetch) refetch();
           }
@@ -105,7 +104,7 @@ const PaidBtns = ({ client, refetch, className = "" }) => {
 
   return (
     <button 
-      onClick={handlePaymentPopup} // ক্লিকে এখন পপআপ ওপেন হবে
+      onClick={handlePaymentPopup} 
       disabled={isAlreadyPaid}
       className={`btn btn-xs text-white flex items-center justify-center gap-1 transition-all ${
         isAlreadyPaid 
