@@ -2,10 +2,10 @@
 import useAxios from '@/hook/useAxios';
 import { useQuery } from '@tanstack/react-query';
 import React, { useState, useEffect } from 'react';
-import { MdPrint, MdDownload, MdAttachMoney, MdDateRange } from 'react-icons/md';
+import { MdPrint, MdDownload, MdAttachMoney, MdReceipt, MdDesktopWindows, MdLocationOn } from 'react-icons/md';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import CollectionReportSheet from '@/components/CollectionReportSheet'; // 👈 আগের ফাইলটি ইম্পোর্ট করা হলো
+import CollectionReportSheet from '@/components/CollectionReportSheet';
 
 const PaidUsers = () => {
   const instance = useAxios();
@@ -58,7 +58,7 @@ const PaidUsers = () => {
     window.print();
   };
 
-  // 📄 ৪. jsPDF দিয়ে খাতার ডিজাইনে ডাউনলোড লজিক
+  // 📄 ৪. jsPDF দিয়ে ডাউনলোড লজিক
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
     
@@ -80,7 +80,7 @@ const PaidUsers = () => {
         payment.ip || 'N/A',        
         payment.receiptNo || 'N/A',  
         payment.client_name,         
-        '',                         
+        '',                          
         `${payment.amount}/=`       
       ]);
     });
@@ -143,7 +143,7 @@ const PaidUsers = () => {
             <select 
               value={filterType} 
               onChange={(e) => setFilterType(e.target.value)}
-              className="select select-sm select-bordered bg-gray-50 text-gray-700 font-medium"
+              className="select select-sm select-bordered bg-gray-50 text-gray-700 font-medium w-full md:w-auto"
             >
               <option value="today">Today's Collection</option>
               <option value="month">This Month's Collection</option>
@@ -151,12 +151,14 @@ const PaidUsers = () => {
               <option value="all">All History</option>
             </select>
 
-            <button onClick={handlePrint} className="btn btn-sm btn-info text-white gap-1">
-              <MdPrint size={16} /> Print Sheet
-            </button>
-            <button onClick={handleDownloadPDF} className="btn btn-sm btn-success text-white gap-1">
-              <MdDownload size={16} /> Export PDF
-            </button>
+            <div className="flex gap-2 w-full md:w-auto justify-end">
+              <button onClick={handlePrint} className="btn btn-sm btn-info text-white gap-1 flex-1 md:flex-none">
+                <MdPrint size={16} /> Print Sheet
+              </button>
+              <button onClick={handleDownloadPDF} className="btn btn-sm btn-success text-white gap-1 flex-1 md:flex-none">
+                <MdDownload size={16} /> Export PDF
+              </button>
+            </div>
           </div>
         </div>
 
@@ -174,13 +176,82 @@ const PaidUsers = () => {
         )}
       </div>
 
-      {/* 📝 ৩. চাইল্ড কম্পোনেন্ট লোড (এখানে প্রিন্ট শিট জেনারেট হচ্ছে প্রপ্স এর মাধ্যমে) */}
-      <CollectionReportSheet 
-        paymentsLog={paymentsLog} 
-        totalCollected={totalCollected} 
-        filterType={filterType}
-        apiDates={apiDates}
-      />
+      {/* 📱 ৩. মোবাইল রেসপন্সিভ বক্স/কার্ড মোড লেআউট (শুধুমাত্র মোবাইলে শো করবে) */}
+<div className="grid grid-cols-1 gap-4 md:hidden no-print mb-6">
+  {paymentsLog.length === 0 ? (
+    <div className="bg-white p-6 rounded-xl text-center border border-gray-100 text-gray-400">
+      No payments log found for this range.
+    </div>
+  ) : (
+    paymentsLog.map((payment, idx) => (
+      <div key={payment?._id || idx} className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex flex-col gap-3 relative overflow-hidden">
+        
+        {/* IP Address এর বড় এবং প্রিমিয়াম টপ ব্যানার ডিজাইন */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-2 rounded-lg flex justify-between items-center shadow-sm">
+          <div className="flex items-center gap-1.5">
+            <MdDesktopWindows size={16} className="text-blue-200" />
+            <span className="text-xs font-medium text-blue-100 uppercase tracking-wider">IP</span>
+          </div>
+          <span className="text-base font-black tracking-wide font-mono bg-white/20 px-2.5 py-0.5 rounded-md backdrop-blur-sm shadow-inner">
+            {payment?.ip || 'N/A'}
+          </span>
+        </div>
+
+        {/* ক্লায়েন্ট ইনফরমেশন সেকশন */}
+        <div className="flex justify-between items-start pt-1">
+          <div>
+            <h3 className="text-base font-extrabold text-gray-800 tracking-tight">
+              {payment?.client_name}
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 font-medium">
+              <MdLocationOn size={13} className="text-gray-400" /> {payment?.zone || 'N/A'}
+            </p>
+          </div>
+          <div className="text-right">
+            <span className="text-base font-black text-emerald-600 block tracking-tight">
+              ৳{payment?.amount}/=
+            </span>
+            <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded-md mt-1 inline-block border border-emerald-100">
+              Paid
+            </span>
+          </div>
+        </div>
+
+        {/* রিসিট নম্বর এবং ডেট (নিচের ফুটার পার্ট) */}
+        <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-gray-100 text-gray-500 font-medium">
+          <div className="flex items-center gap-1">
+            <MdReceipt size={14} className="text-indigo-500" />
+            <span>Receipt: <strong className="text-gray-700 font-mono">#{payment?.receiptNo || 'N/A'}</strong></span>
+          </div>
+          <div className="text-right text-gray-400">
+            <span>Date: {payment?.date || 'N/A'}</span>
+          </div>
+        </div>
+
+      </div>
+    ))
+  )}
+</div>
+
+      {/* 📝 ৪. ডেক্সটপ এবং প্রিন্ট লেআউট (মাঝারি ও বড় স্ক্রিনে টেবিল দেখাবে, মোবাইলে হাইড থাকবে) */}
+      <div className="hidden md:block">
+        <CollectionReportSheet 
+          paymentsLog={paymentsLog} 
+          totalCollected={totalCollected} 
+          filterType={filterType}
+          apiDates={apiDates}
+        />
+      </div>
+
+      {/* প্রিন্ট করার সময় যাতে মোবাইল ভিউ হাইড হয়ে আসল প্রিন্ট শিটটাই প্রিন্ট হয় তার জন্য এই কন্ডিশন */}
+      <div className="visible-print hidden">
+        <CollectionReportSheet 
+          paymentsLog={paymentsLog} 
+          totalCollected={totalCollected} 
+          filterType={filterType}
+          apiDates={apiDates}
+        />
+      </div>
 
     </div>
   );

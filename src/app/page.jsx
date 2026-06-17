@@ -3,10 +3,13 @@ import useAxios from '@/hook/useAxios';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import React, { useState } from 'react';
-import { MdLocalPhone, MdNavigateBefore, MdNavigateNext, MdCheckCircleOutline } from 'react-icons/md';
+import { MdLocalPhone, MdNavigateBefore, MdNavigateNext } from 'react-icons/md';
 import Swal from 'sweetalert2';
 import ClientReportActions from '@/components/ClientReportActions'; 
 import PaidBtns from '@/components/PaidBtns';
+// নতুন বাটন কম্পোনেন্ট দুটি ইম্পোর্ট করা হলো (আপনার ফাইল পাথ অনুযায়ী চেঞ্জ করে নিতে পারেন)
+import EditClientBtn from '@/components/EditClientBtn'; 
+import PromiseBtn from '@/components/PromiseBtn';
 
 export default function ResponsiveClientList() {
   const instance = useAxios();
@@ -142,7 +145,7 @@ export default function ResponsiveClientList() {
           </div>
         ) : (
           <>
-            {/* 1. Mobile Box/Card View (আপডেটেড - এখানে মোবাইল ও আইপি এড্রেস শো করানো হয়েছে) */}
+            {/* 1. Mobile Box/Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
               {clientsData.map(client => (
                 <div key={client?._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
@@ -155,7 +158,7 @@ export default function ResponsiveClientList() {
                     <span onClick={() => handleStatusUpdate(client?._id, client?.status)} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border cursor-pointer ${client?.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>{client?.status}</span>
                   </div>
                   
-                  {/* মোবাইল এবং আইপি এর নতুন সেকশন */}
+                  {/* মোবাইল এবং আইপি সেকশন */}
                   <div className="text-xs flex flex-col gap-1.5 text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-gray-700">IP Address:</span>
@@ -178,11 +181,26 @@ export default function ResponsiveClientList() {
                       <span className="font-semibold text-gray-700">Amount:</span>
                       <span className="text-gray-900 font-bold">৳{client?.amount || 0}</span>
                     </div>
+                    {/* যদি কোনো প্রমিজ ডেট থেকে থাকে তবে তা এখানে দেখাবে */}
+                    {client?.promise_date && (
+                      <div className="flex justify-between items-center bg-amber-50 p-1.5 rounded border border-amber-100 text-amber-800">
+                        <span className="font-semibold">Promise Date:</span>
+                        <span className="font-medium text-xs">{client?.promise_date}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-xs flex flex-col gap-2 text-gray-500">
                     <p><strong className="text-gray-700">Address:</strong> {client?.address}</p>
-                  <PaidBtns client={client} refetch={refetch} />
+                    {client?.promise_note && <p className="text-xs italic text-gray-400"><strong className="text-gray-600">Note:</strong> {client?.promise_note}</p>}
+                  </div>
+
+                  {/* 📱 মোবাইল ভিউতে অ্যাকশন বাটন সেকশন */}
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 justify-end">
+                    <EditClientBtn client={client} refetch={refetch} />
+                    <PromiseBtn client={client} refetch={refetch} />
+                    <PaidBtns client={client} refetch={refetch} />
+                   
                   </div>
                 </div>
               ))}
@@ -228,10 +246,24 @@ export default function ResponsiveClientList() {
                           <span onClick={() => handleStatusUpdate(client?._id, client?.status)} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border cursor-pointer ${client?.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>{client?.status}</span>
                         </td>
                         <td className="py-3 px-4 text-xs max-w-[180px] text-gray-500 italic">
-                          <span className="block bg-yellow-50 text-yellow-800 p-1.5 rounded border border-yellow-100 truncate">Package upgrade next month.</span>
+                          {client?.promise_date ? (
+                            <span className="block bg-amber-50 text-amber-800 p-1.5 rounded border border-amber-100">
+                              Promise: {client.promise_date} <br />
+                              <small className="text-gray-500">{client?.promise_note}</small>
+                            </span>
+                          ) : (
+                            <span className="block bg-yellow-50 text-yellow-800 p-1.5 rounded border border-yellow-100 truncate">Package upgrade next month.</span>
+                          )}
                         </td>
+                        
+                        {/* 💻 ডেক্সটপ টেবিল অ্যাকশন কলাম */}
                         <td className="py-3 px-4 text-center no-print">
-                          <button onClick={() => handleMarkPaid(client?.client_name)} className="btn btn-xs btn-success text-white font-medium">Paid</button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <EditClientBtn client={client} refetch={refetch} />
+                            <PromiseBtn client={client} refetch={refetch} />
+                            <PaidBtns client={client} refetch={refetch} />
+                            <button onClick={() => handleMarkPaid(client?.client_name)} className="btn btn-xs btn-success text-white font-medium">Paid</button>
+                          </div>
                         </td>
                       </tr>
                     ))}
