@@ -15,6 +15,7 @@ const EditClientBtn = ({ client, refetch }) => {
     zone: '',
     speed: '',
     amount: 0,
+    status: 'Active', // ⚡ স্ট্যাটাস স্টেট যুক্ত করা হলো
   });
 
   // ক্লায়েন্ট ডাটা চেঞ্জ হলে বা মোডাল ওপেন হলে স্টেট সিঙ্ক করার জন্য এফেক্ট
@@ -28,6 +29,7 @@ const EditClientBtn = ({ client, refetch }) => {
         zone: client?.zone || '',
         speed: client?.speed || '',
         amount: client?.amount || 0,
+        status: client?.status || 'Active', // ⚡ ডিফল্ট ডাটা সিঙ্ক
       });
     }
   }, [client, isOpen]);
@@ -70,7 +72,7 @@ const EditClientBtn = ({ client, refetch }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // ব্যাকএন্ডের নতুন রাউটে ডাটা পাঠানো হচ্ছে
+      // ব্যাকএন্ডের নতুন রাউটে ডাটা পাঠানো হচ্ছে (formData এর সাথে এখন status ও যাবে)
       const res = await instance.patch(`/update-client`, {
         id: client?._id,
         ...formData
@@ -155,6 +157,21 @@ const EditClientBtn = ({ client, refetch }) => {
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Monthly Amount (৳)</label>
                 <input type="number" name="amount" value={formData.amount} onChange={handleChange} className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800" required />
+              </div>
+
+              {/* ⚡ নতুন যুক্ত করা স্ট্যাটাস কলাম (ড্রপডাউন সিলেক্ট বক্স) */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Connection Status</label>
+                <select 
+                  name="status" 
+                  value={formData.status} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-medium"
+                  required
+                >
+                  <option value="Active">🟢 Active</option>
+                  <option value="Inactive">🔴 Inactive</option>
+                </select>
               </div>
 
               <div className="sm:col-span-2">

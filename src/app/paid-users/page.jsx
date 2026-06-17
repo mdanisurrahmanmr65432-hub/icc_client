@@ -49,6 +49,12 @@ const PaidUsers = () => {
 
   const totalCollected = paymentsLog.reduce((sum, item) => sum + (item.amount || 0), 0);
 
+  // 🔢 SL নাম্বারকে ৩ ডিজিটে রূপান্তর করার হেল্পার ফাংশন (e.g., 5 -> 005, 12 -> 012)
+  const formatSlNumber = (sl) => {
+    if (!sl && sl !== 0) return 'N/A';
+    return String(sl).padStart(3, '0');
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -65,12 +71,13 @@ const PaidUsers = () => {
     doc.text(`Filter Mode: ${filterType.toUpperCase()}`, 14, 34);
     doc.text(`Total Collected: BDT ${totalCollected}/=`, 14, 40);
 
-    const tableColumn = ["Id No.", "From (Receipt)", "Name", "Due Bill.", "Running BILL"];
+    // 👉 আপডেট: কলাম হেডার "Id No." থেকে "SL" করা হয়েছে
+    const tableColumn = ["SL", "From (Receipt)", "Name", "Due Bill.", "Running BILL"];
     const tableRows = [];
 
     paymentsLog.forEach((payment) => {
       tableRows.push([
-        payment.ip || 'N/A',        
+        formatSlNumber(payment.sl), // ⚡ এখানে IP বাদ দিয়ে ফরম্যাটেড SL বসানো হয়েছে
         payment.receiptNo || 'N/A',  
         payment.client_name,         
         '',                          
@@ -88,10 +95,11 @@ const PaidUsers = () => {
       styles: { fontSize: 11, cellPadding: 4, textColor: [0, 0, 0] },
       headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold' },
       columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        3: { halign: 'right' },
-        4: { halign: 'right', fontStyle: 'bold' }
+        0: { halign: 'center', cellWidth: 20 }, // SL কলাম ফিক্সড সাইজ
+        1: { halign: 'center', cellWidth: 35 }, 
+        2: { halign: 'left', cellWidth: 'auto' }, // ⚡ নেম কলাম যেন সর্বোচ্চ জায়গা পায় (বড় দেখায়)
+        3: { halign: 'right', cellWidth: 30 }, 
+        4: { halign: 'right', cellWidth: 35, fontStyle: 'bold' }
       }
     });
 
@@ -169,7 +177,7 @@ const PaidUsers = () => {
         )}
       </div>
 
-      {/* 📱 ৩. মোবাইল রেসপন্সিভ বক্স মোড (শুধুমাত্র মোবাইলের স্ক্রিনে ও নরমাল ভিউতে দেখাবে, প্রিন্ট করার সময় হাইড হবে) */}
+      {/* 📱 ৩. মোবাইল রেসপন্সিভ বক্স মোড */}
       <div className="grid grid-cols-1 gap-4 md:hidden no-print mb-6">
         {paymentsLog.length === 0 ? (
           <div className="bg-white p-6 rounded-xl text-center border border-gray-100 text-gray-400">
@@ -182,10 +190,11 @@ const PaidUsers = () => {
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-2 rounded-lg flex justify-between items-center shadow-sm">
                 <div className="flex items-center gap-1.5">
                   <MdDesktopWindows size={16} className="text-blue-200" />
-                  <span className="text-xs font-medium text-blue-100 uppercase tracking-wider">IP</span>
+                  <span className="text-xs font-medium text-blue-100 uppercase tracking-wider">SL Number</span>
                 </div>
+                {/* ⚡ মোবাইলের ইন্টারফেসেও ৩ ডিজিটের প্যাডিং করা SL দেখা যাবে */}
                 <span className="text-base font-black tracking-wide font-mono bg-white/20 px-2.5 py-0.5 rounded-md backdrop-blur-sm shadow-inner">
-                  {payment?.ip || 'N/A'}
+                  {formatSlNumber(payment?.sl)}
                 </span>
               </div>
 
@@ -196,7 +205,6 @@ const PaidUsers = () => {
                   </h3>
                   <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 font-medium">
                     <MdLocationOn size={13} className="text-gray-400" /> 
-                    {/* এখানে সব ধরণের সম্ভাব্য নাম চেক করা হয়েছে যাতে মিস না হয় */}
                     {payment?.zone || payment?.location || payment?.area || 'N/A'}
                   </p>
                 </div>
@@ -216,7 +224,8 @@ const PaidUsers = () => {
                   <span>Receipt: <strong className="text-gray-700 font-mono">#{payment?.receiptNo || 'N/A'}</strong></span>
                 </div>
                 <div className="text-right text-gray-400">
-                  <span>Date: {payment?.date || 'N/A'}</span>
+                  {/* ডেট ফরম্যাটটি পঠিত করার জন্য লোকাল স্ট্রিং কনভার্ট করা যেতে পারে */}
+                  <span>Date: {payment?.paidDate ? new Date(payment.paidDate).toLocaleDateString('en-GB') : 'N/A'}</span>
                 </div>
               </div>
 
@@ -226,13 +235,14 @@ const PaidUsers = () => {
       </div>
 
       {/* 📝 ৪. ডেক্সটপ শিট এবং প্রিন্ট লেআউট */}
-      {/* (Tailwind এর ক্লাসের বদলে CSS মিডিয়া কুয়েরি স্টাইল দিয়ে প্রিন্ট এনশিওর করা হয়েছে) */}
+      {/* 💡 নোট: আপনার `CollectionReportSheet` কম্পোনেন্ট ফাইলের ভেতর টেবিলে `payment.ip` এর পরিবর্তে `formatSlNumber(payment.sl)` বা শুধু `payment.sl` হ্যান্ডেল করে নিবেন এবং নামের কলামের উইডথ বাড়িয়ে দিবেন */}
       <div className="print-sheet-container">
         <CollectionReportSheet 
           paymentsLog={paymentsLog} 
           totalCollected={totalCollected} 
           filterType={filterType}
           apiDates={apiDates}
+          formatSlNumber={formatSlNumber} // হেল্পারটি চাইল্ড কম্পোনেন্টেও পাস করা হলো
         />
       </div>
 
