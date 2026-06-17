@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { MdLocalPhone, MdNavigateBefore, MdNavigateNext, MdCheckCircleOutline } from 'react-icons/md';
 import Swal from 'sweetalert2';
 import ClientReportActions from '@/components/ClientReportActions'; 
+import PaidBtns from '@/components/PaidBtns';
 
 export default function ResponsiveClientList() {
   const instance = useAxios();
@@ -181,7 +182,7 @@ export default function ResponsiveClientList() {
 
                   <div className="text-xs flex flex-col gap-2 text-gray-500">
                     <p><strong className="text-gray-700">Address:</strong> {client?.address}</p>
-                    <button onClick={() => handleMarkPaid(client?.client_name)} className="btn btn-xs btn-success text-white flex items-center gap-1 w-full"><MdCheckCircleOutline /> Paid</button>
+                  <PaidBtns client={client} refetch={refetch} />
                   </div>
                 </div>
               ))}
