@@ -7,7 +7,6 @@ import { MdLocalPhone, MdNavigateBefore, MdNavigateNext } from 'react-icons/md';
 import Swal from 'sweetalert2';
 import ClientReportActions from '@/components/ClientReportActions'; 
 import PaidBtns from '@/components/PaidBtns';
-// নতুন বাটন কম্পোনেন্ট দুটি ইম্পোর্ট করা হলো (আপনার ফাইল পাথ অনুযায়ী চেঞ্জ করে নিতে পারেন)
 import EditClientBtn from '@/components/EditClientBtn'; 
 import PromiseBtn from '@/components/PromiseBtn';
 
@@ -18,7 +17,8 @@ export default function ResponsiveClientList() {
     name: '',
     mobile: '',
     ip: '',
-    address: ''
+    address: '',
+    status: '' // ⚡ স্ট্যাটাস ফিল্টারিং এর জন্য নতুন স্টেট যুক্ত করা হলো
   });
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -37,14 +37,17 @@ export default function ResponsiveClientList() {
     setPage(1); 
   };
 
-  // ক্লায়েন্ট সাইড ফিল্টারিং
+  // 📝 ক্লায়েন্ট সাইড ফিল্টারিং (স্ট্যাটাসসহ আপডেট করা হয়েছে)
   const filteredClients = allClients.filter(client => {
     const matchesName = client?.client_name?.toLowerCase().includes(filters.name.toLowerCase());
     const matchesMobile = client?.mobile?.toLowerCase().includes(filters.mobile.toLowerCase());
     const matchesIp = client?.ip?.toLowerCase().includes(filters.ip.toLowerCase());
     const matchesAddress = client?.address?.toLowerCase().includes(filters.address.toLowerCase());
     
-    return matchesName && matchesMobile && matchesIp && matchesAddress;
+    // ⚡ স্ট্যাটাস ফিল্টার সিলেক্ট করা থাকলে মিলিয়ে দেখবে, খালি থাকলে সব দেখাবে
+    const matchesStatus = filters.status === '' || client?.status === filters.status;
+    
+    return matchesName && matchesMobile && matchesIp && matchesAddress && matchesStatus;
   });
 
   const totalClients = filteredClients.length;
@@ -83,8 +86,8 @@ export default function ResponsiveClientList() {
             </p>
           </div>
 
-          {/* ৪টি আলাদা সার্চ ফিল্ড */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 w-full lg:w-auto flex-grow max-w-4xl">
+          {/* 🔍 সার্চ ফিল্ডসমূহ (স্ট্যাটাস ড্রপডাউন গ্রিডে সেট করা হয়েছে) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 w-full lg:w-auto flex-grow max-w-5xl">
             <input
               type="text"
               name="name"
@@ -117,6 +120,18 @@ export default function ResponsiveClientList() {
               placeholder="Search by Address..."
               className="w-full px-3 py-1.5 md:py-2 text-xs md:text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
             />
+            
+            {/* ⚡ নতুন যুক্ত করা স্ট্যাটাস ফিল্টারিং ড্রপডাউন */}
+            <select
+              name="status"
+              value={filters.status}
+              onChange={handleFilterChange}
+              className="w-full px-3 py-1.5 md:py-2 text-xs md:text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 font-medium cursor-pointer"
+            >
+              <option value="">All Status</option>
+              <option value="Active">🟢 Active</option>
+              <option value="Inactive">🔴 Inactive</option>
+            </select>
           </div>
 
           <div className="bg-blue-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow text-xs md:text-sm font-medium text-center whitespace-nowrap self-stretch sm:self-auto flex items-center justify-center">
@@ -158,7 +173,6 @@ export default function ResponsiveClientList() {
                     <span onClick={() => handleStatusUpdate(client?._id, client?.status)} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border cursor-pointer ${client?.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>{client?.status}</span>
                   </div>
                   
-                  {/* মোবাইল এবং আইপি সেকশন */}
                   <div className="text-xs flex flex-col gap-1.5 text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-gray-700">IP Address:</span>
@@ -181,7 +195,6 @@ export default function ResponsiveClientList() {
                       <span className="font-semibold text-gray-700">Amount:</span>
                       <span className="text-gray-900 font-bold">৳{client?.amount || 0}</span>
                     </div>
-                    {/* যদি কোনো প্রমিজ ডেট থেকে থাকে তবে তা এখানে দেখাবে */}
                     {client?.promise_date && (
                       <div className="flex justify-between items-center bg-amber-50 p-1.5 rounded border border-amber-100 text-amber-800">
                         <span className="font-semibold">Promise Date:</span>
@@ -195,12 +208,10 @@ export default function ResponsiveClientList() {
                     {client?.promise_note && <p className="text-xs italic text-gray-400"><strong className="text-gray-600">Note:</strong> {client?.promise_note}</p>}
                   </div>
 
-                  {/* 📱 মোবাইল ভিউতে অ্যাকশন বাটন সেকশন */}
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 justify-end">
                     <EditClientBtn client={client} refetch={refetch} />
                     <PromiseBtn client={client} refetch={refetch} />
                     <PaidBtns client={client} refetch={refetch} />
-                   
                   </div>
                 </div>
               ))}
@@ -255,8 +266,6 @@ export default function ResponsiveClientList() {
                             <span className="block bg-yellow-50 text-yellow-800 p-1.5 rounded border border-yellow-100 truncate">Package upgrade next month.</span>
                           )}
                         </td>
-                        
-                        {/* 💻 ডেক্সটপ টেবিল অ্যাকশন কলাম */}
                         <td className="py-3 px-4 text-center no-print">
                           <div className="flex items-center justify-center gap-1.5">
                             <EditClientBtn client={client} refetch={refetch} />
@@ -272,7 +281,7 @@ export default function ResponsiveClientList() {
               </div>
             </div>
 
-            {/* ৩. প্যাগিনেশন */}
+            {/* 3. প্যাগিনেশন */}
             <div className="flex justify-center items-center gap-4 mt-6 pb-10">
               <button disabled={page === 1} onClick={() => setPage(prev => prev - 1)} className="btn btn-sm btn-outline flex items-center gap-1"><MdNavigateBefore size={18} /> Previous</button>
               <span className="text-xs md:text-sm font-semibold text-gray-700">Page {page} of {totalPages}</span>
