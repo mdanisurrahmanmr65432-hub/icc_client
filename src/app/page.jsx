@@ -5,7 +5,6 @@ import Link from 'next/link';
 import React, { useState } from 'react';
 import { MdLocalPhone, MdNavigateBefore, MdNavigateNext, MdCheckCircleOutline } from 'react-icons/md';
 import Swal from 'sweetalert2';
-// 👈 নতুন কম্পোনেন্টটি ইমপোর্ট করুন (আপনার ফোল্ডার পাথ অনুযায়ী ঠিক করে নিন)
 import ClientReportActions from '@/components/ClientReportActions'; 
 
 export default function ResponsiveClientList() {
@@ -34,7 +33,7 @@ export default function ResponsiveClientList() {
     setPage(1); 
   };
 
-  // ক্লায়েন্ট সাইড ফিল্টারিং (ইউজারের লাইভ সার্চ করা ডাটা)
+  // ক্লায়েন্ট সাইড ফিল্টারিং
   const filteredClients = allClients.filter(client => {
     const matchesName = client?.client_name?.toLowerCase().includes(filters.name.toLowerCase());
     const matchesMobile = client?.mobile?.toLowerCase().includes(filters.mobile.toLowerCase());
@@ -121,13 +120,11 @@ export default function ResponsiveClientList() {
           </div>
         </div>
 
-        {/* 🛠️ অ্যাকশন বাটন সেকশন: এখানে নতুন অ্যাকশন কম্পোনেন্টটি যুক্ত করা হয়েছে */}
+        {/* অ্যাকশন বাটন সেকশন */}
         <div className="mb-4 flex flex-wrap justify-between items-center gap-3">
           <Link href={'/post'} className="btn btn-info text-white btn-sm md:btn-md">
             Add New
           </Link>
-          
-          {/* এখানে ফিল্টার করা লাইভ ডাটা পাস হচ্ছে */}
           <ClientReportActions filteredData={filteredClients} />
         </div>
 
@@ -144,11 +141,10 @@ export default function ResponsiveClientList() {
           </div>
         ) : (
           <>
-            {/* 1. Mobile Box/Card View */}
+            {/* 1. Mobile Box/Card View (আপডেটেড - এখানে মোবাইল ও আইপি এড্রেস শো করানো হয়েছে) */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
               {clientsData.map(client => (
                 <div key={client?._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
-                  {/* মোবাইল ভিউ কার্ডের বাকি অংশ আগের মতোই থাকবে */}
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-xs font-mono text-gray-400 mr-1">#{client?.sl}</span>
@@ -157,7 +153,32 @@ export default function ResponsiveClientList() {
                     </div>
                     <span onClick={() => handleStatusUpdate(client?._id, client?.status)} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border cursor-pointer ${client?.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>{client?.status}</span>
                   </div>
-                  {/* ... বাকি মোবাইল এন্ট্রি কোড ... */}
+                  
+                  {/* মোবাইল এবং আইপি এর নতুন সেকশন */}
+                  <div className="text-xs flex flex-col gap-1.5 text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-700">IP Address:</span>
+                      <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-mono text-xs font-medium">{client?.ip || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-700">Mobile:</span>
+                      {client?.mobile ? (
+                        <a 
+                          href={`tel:${client.mobile}`} 
+                          className="text-blue-600 hover:underline flex items-center gap-1 font-mono text-xs bg-white border border-gray-200 px-2 py-0.5 rounded shadow-sm"
+                        >
+                          <MdLocalPhone size={12} className="text-green-500" /> {client.mobile}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">N/A</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-700">Amount:</span>
+                      <span className="text-gray-900 font-bold">৳{client?.amount || 0}</span>
+                    </div>
+                  </div>
+
                   <div className="text-xs flex flex-col gap-2 text-gray-500">
                     <p><strong className="text-gray-700">Address:</strong> {client?.address}</p>
                     <button onClick={() => handleMarkPaid(client?.client_name)} className="btn btn-xs btn-success text-white flex items-center gap-1 w-full"><MdCheckCircleOutline /> Paid</button>
@@ -166,7 +187,7 @@ export default function ResponsiveClientList() {
               ))}
             </div>
 
-            {/* 2. Desktop Table View (আইডি যুক্ত করা হয়েছে প্রিন্টের সুবিধার জন্য) */}
+            {/* 2. Desktop Table View */}
             <div id="printable-client-table" className="hidden md:block bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -192,7 +213,11 @@ export default function ResponsiveClientList() {
                         <td className="py-3 px-4 text-center font-medium text-gray-400">{client?.sl}</td>
                         <td className="py-3 px-4 font-semibold text-gray-800">{client?.client_name}</td>
                         <td className="py-3 px-4 max-w-xs truncate" title={client?.address}>{client?.address}</td>
-                        <td className="py-3 px-4 font-mono text-xs">{client.mobile}</td>
+                        <td className="py-3 px-4 font-mono text-xs">
+                          <a href={`tel:${client.mobile}`} className="text-blue-600 hover:underline flex items-center gap-1">
+                            <MdLocalPhone className="text-gray-400" /> {client.mobile}
+                          </a>
+                        </td>
                         <td className="py-3 px-4 font-mono text-xs text-blue-600"><span className="bg-blue-50 rounded px-1.5 py-0.5">{client?.ip}</span></td>
                         <td className="py-3 px-4 text-gray-500">{client.zone}</td>
                         <td className="py-3 px-4 text-center"><span className="bg-purple-100 text-purple-700 font-semibold px-2 py-1 rounded text-xs">{client?.speed}</span></td>
