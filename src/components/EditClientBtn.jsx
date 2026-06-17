@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import useAxios from '@/hook/useAxios';
 import { MdEdit } from 'react-icons/md';
@@ -8,16 +8,31 @@ const EditClientBtn = ({ client, refetch }) => {
   const instance = useAxios();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
-    client_name: client?.client_name || '',
-    mobile: client?.mobile || '',
-    ip: client?.ip || '',
-    address: client?.address || '',
-    zone: client?.zone || '',
-    speed: client?.speed || '',
-    amount: client?.amount || 0,
+    client_name: '',
+    mobile: '',
+    ip: '',
+    address: '',
+    zone: '',
+    speed: '',
+    amount: 0,
   });
 
-  // 🔐 পাসওয়ার্ড চেক করার ফাংশন
+  // ক্লায়েন্ট ডাটা চেঞ্জ হলে বা মোডাল ওপেন হলে স্টেট সিঙ্ক করার জন্য এফেক্ট
+  useEffect(() => {
+    if (client) {
+      setFormData({
+        client_name: client?.client_name || '',
+        mobile: client?.mobile || '',
+        ip: client?.ip || '',
+        address: client?.address || '',
+        zone: client?.zone || '',
+        speed: client?.speed || '',
+        amount: client?.amount || 0,
+      });
+    }
+  }, [client, isOpen]);
+
+  // 🔐 পাসওয়ার্ড চেক করার ফাংশন
   const handleVerifyPassword = async () => {
     const { value: password } = await Swal.fire({
       title: 'Enter Admin Password',
@@ -32,7 +47,7 @@ const EditClientBtn = ({ client, refetch }) => {
     });
 
     if (password === '232601') {
-      setIsOpen(true); // পাসওয়ার্ড মিললে এডিট মোডাল ওপেন হবে
+      setIsOpen(true); // পাসওয়ার্ড মিললে এডিট মোডাল ওপেন হবে
     } else if (password) {
       Swal.fire({
         icon: 'error',
@@ -45,20 +60,23 @@ const EditClientBtn = ({ client, refetch }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: name === 'amount' ? parseInt(value, 10) || 0 : value 
+    }));
   };
 
   // 📝 ডাটা আপডেট সাবমিট ফাংশন
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // আপনার ব্যাকএন্ডের API রাউট অনুযায়ী মিলিয়ে নেবেন (যেমন: /update-client-data)
+      // ব্যাকএন্ডের নতুন রাউটে ডাটা পাঠানো হচ্ছে
       const res = await instance.patch(`/update-client`, {
         id: client?._id,
         ...formData
       });
 
-      if (res.status === 200 || res.data) {
+      if (res.data?.success || res.status === 200) {
         Swal.fire({
           icon: 'success',
           title: 'Updated!',
@@ -66,13 +84,16 @@ const EditClientBtn = ({ client, refetch }) => {
           confirmButtonColor: '#10B981'
         });
         setIsOpen(false);
-        refetch(); // মেইন টেবিল ডাটা রিফেচ করবে
+        if (refetch) refetch(); // মেইন টেবিল ডাটা রিফেচ করবে
+      } else {
+        throw new Error(res.data?.message || "Failed to update");
       }
     } catch (error) {
+      console.error("Update error detail:", error);
       Swal.fire({
         icon: 'error',
         title: 'Failed!',
-        text: 'Something went wrong while updating.',
+        text: error.response?.data?.message || 'Something went wrong while updating.',
         confirmButtonColor: '#EF4444'
       });
     }
@@ -90,14 +111,15 @@ const EditClientBtn = ({ client, refetch }) => {
 
       {/* 📑 ডাইনামিক এডিট মোডাল পপআপ */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fadeIn text-left">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 text-left">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
             {/* মোডাল হেডার */}
             <div className="bg-gray-100 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-bold text-gray-800">Edit Client: {client?.client_name}</h3>
               <button 
                 onClick={() => setIsOpen(false)} 
-                className="text-gray-500 hover:text-gray-800 text-xl font-bold"
+                className="text-gray-500 hover:text-gray-800 text-xl font-bold-none"
+                type="button"
               >
                 &times;
               </button>

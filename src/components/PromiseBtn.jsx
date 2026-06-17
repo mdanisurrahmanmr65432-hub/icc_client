@@ -17,13 +17,16 @@ const PromiseBtn = ({ client, refetch }) => {
     }
 
     try {
+      // 👉 ফিক্স: বডিতে এখন client_name এবং address/zone পাঠানো হচ্ছে ব্যাকএন্ডের রিকোয়ারমেন্ট অনুযায়ী
       const res = await instance.patch('/update-promise-date', {
         id: client?._id,
+        client_name: client?.client_name,
+        address: client?.zone || client?.address || client?.location || 'N/A', // লোকেশন ফলব্যাক
         promise_date: promiseDate,
         promise_note: promiseNote
       });
 
-      if (res.status === 200 || res.data) {
+      if (res.data?.success || res.status === 200) {
         Swal.fire({
           icon: 'success',
           title: 'Promise Recorded!',
@@ -33,13 +36,14 @@ const PromiseBtn = ({ client, refetch }) => {
         setIsOpen(false);
         setPromiseDate('');
         setPromiseNote('');
-        refetch(); // টেবিল রিফেচ করবে
+        if (refetch) refetch(); // টেবিল রিফেচ করবে
       }
     } catch (error) {
+      console.error("Promise API Error:", error);
       Swal.fire({
         icon: 'error',
         title: 'Failed!',
-        text: 'Something went wrong.',
+        text: error.response?.data?.message || 'Something went wrong.',
         confirmButtonColor: '#EF4444'
       });
     }
@@ -58,10 +62,10 @@ const PromiseBtn = ({ client, refetch }) => {
       {/* 🗓️ প্রমিজ ইনপুট মোডাল */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 text-left">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-100">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
             <div className="bg-amber-500 text-white px-5 py-3 flex justify-between items-center">
               <h3 className="font-bold flex items-center gap-2"><MdHandshake /> Payment Promise</h3>
-              <button onClick={() => setIsOpen(false)} className="text-white hover:text-gray-200 text-xl font-bold">&times;</button>
+              <button type="button" onClick={() => setIsOpen(false)} className="text-white hover:text-gray-200 text-xl font-bold">&times;</button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
@@ -90,7 +94,7 @@ const PromiseBtn = ({ client, refetch }) => {
 
               <div className="flex justify-end gap-2 border-t pt-3">
                 <button type="button" onClick={() => setIsOpen(false)} className="btn btn-sm btn-outline">Cancel</button>
-                <button type="submit" className="btn btn-sm bg-amber-500 hover:bg-amber-600 text-white border-none">Save Promise</button>
+                <button type="submit" className="btn btn-sm btn-primary bg-amber-500 hover:bg-amber-600 text-white border-none">Save Promise</button>
               </div>
             </form>
           </div>
