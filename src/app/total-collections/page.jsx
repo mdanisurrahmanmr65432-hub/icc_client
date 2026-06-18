@@ -22,48 +22,39 @@ const TotalCollection = () => {
     },
   });
 
-  // ২. 🤝 আপনার ব্যাকএন্ডের সঠিক এন্ডপয়েন্ট (/get-payments-data) এবং প্যারামিটার অনুযায়ী পেমেন্ট লগ ফেচিং
+  // ২. পেমেন্ট লগ বা কালেকশন ডাটা ফেচিং
   const { data: paymentsResponse, isLoading: paymentsLoading } = useQuery({
     queryKey: ['total-collection-payments', selectedMonth],
     queryFn: async () => {
-      // নির্বাচিত মাসের ১ম তারিখ (01) এবং শেষ তারিখ (যেমন ৩০ বা ৩১) ডাইনামিক বের করা
       const startDate = `${selectedMonth}-01`;
       const year = parseInt(selectedMonth.split('-')[0]);
       const month = parseInt(selectedMonth.split('-')[1]);
-      const lastDay = new Date(year, month, 0).getDate(); // মাসের শেষ দিন (৩০, ৩১ বা ২৮) বের করবে
+      const lastDay = new Date(year, month, 0).getDate(); 
       const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
 
-      // ব্যাকএন্ডের query ফিল্টার অনুযায়ী ডাটা রিকোয়েস্ট
       const res = await instance.get(`/get-payments-data?startDate=${startDate}&endDate=${endDate}`);
       return res.data;
     },
   });
 
-  // ব্যাকএন্ড থেকে আসা পেমেন্ট অ্যারেটি আলাদা করা (আপনার ব্যাকএন্ড ডাটা পাঠায় { success: true, data: [...] } ফরম্যাটে)
   const paymentsLog = paymentsResponse?.data || [];
 
   // ⚙️ ডাটা প্রোসেসিং এবং ফিল্টারিং লজিক
   const reportData = useMemo(() => {
-    // শুধুমাত্র Active ক্লায়েন্টদের ফিল্টার করা হচ্ছে
     const activeClients = allClients.filter(client => client?.status === 'Active');
 
-    // সামারি কাউন্টার
     let totalPaidAmount = 0;
     let totalUnpaidAmount = 0;
     let paidCount = 0;
     let unpaidCount = 0;
 
-    // ক্লায়েন্টদের ডাটার সাথে ব্যাকএন্ডের পেমেন্ট ম্যাচ করানো
     const updatedClients = activeClients.map(client => {
-      
-      // ⚡ ফিক্স: আপনার ব্যাকএন্ডে 'clientId' হিসেবে ডাটা জমা হয়। তাই আমরা string এ কনভার্ট করে ম্যাচ করাচ্ছি।
       const paymentInfo = paymentsLog.find(p => String(p?.clientId) === String(client?._id));
       
       const isPaid = !!paymentInfo;
       const billAmount = client?.amount || 0;
 
       if (isPaid) {
-        // যদি ডাটাবেজে নির্দিষ্ট পেমেন্ট অ্যামাউন্ট থাকে তবে সেটি নিবে, না হলে ক্লায়েন্টের ফিক্সড অ্যামাউন্ট
         totalPaidAmount += (paymentInfo?.amount || billAmount);
         paidCount++;
       } else {
@@ -93,7 +84,6 @@ const TotalCollection = () => {
     return String(sl).padStart(3, '0');
   };
 
-  // 🖨️ ব্রাউজার প্রিন্ট ট্রিগার
   const handlePrint = () => {
     window.print();
   };
@@ -110,7 +100,7 @@ const TotalCollection = () => {
   return (
     <div className="container mx-auto p-4 md:p-6 bg-gray-50 min-h-screen no-print-bg">
       
-      {/* 🔍 ফিল্টার এবং অ্যাকশন বার (প্রিন্টে হাইড থাকবে) */}
+      {/* 🔍 ফিল্টার এবং অ্যাকশন বার */}
       <div className="mb-6 flex flex-wrap justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200 no-print">
         <div className="flex items-center gap-2">
           <label className="text-sm font-semibold text-gray-700">Select Month:</label>
@@ -164,18 +154,21 @@ const TotalCollection = () => {
 
           {/* 📝 ডাটা টেবিল */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse border border-gray-400 text-sm table-fixed">
-              <thead>
+            <table className="w-full text-left border-collapse border border-gray-400 text-sm table-fixed print:table">
+              
+              <thead className="print:table-header-group">
                 <tr className="bg-gray-100 text-black font-semibold border-b border-gray-400 text-xs uppercase tracking-wider">
-                  <th className="py-2.5 px-2 border border-gray-400 text-center w-[7%]">SL</th>
-                  <th className="py-2.5 px-2 border border-gray-400 text-center w-[12%]">IP Address</th>
+                  {/* ⚡ উইডথ অ্যাডজাস্ট করা হলো: IP বাড়ানো হয়েছে, SL ও Mobile সামান্য কমানো হয়েছে */}
+                  <th className="py-2.5 px-2 border border-gray-400 text-center w-[5%]">SL</th>
+                  <th className="py-2.5 px-2 border border-gray-400 text-center w-[15%]">IP Address</th>
                   <th className="py-2.5 px-3 border border-gray-400 w-[20%]">Client Name</th>
-                  <th className="py-2.5 px-3 border border-gray-400 w-[28%]">Address</th>
-                  <th className="py-2.5 px-2 border border-gray-400 text-center w-[13%]">Mobile</th>
+                  <th className="py-2.5 px-3 border border-gray-400 w-[29%]">Address</th>
+                  <th className="py-2.5 px-2 border border-gray-400 text-center w-[11%]">Mobile</th>
                   <th className="py-2.5 px-2 border border-gray-400 text-right w-[10%]">Bill</th>
                   <th className="py-2.5 px-2 border border-gray-400 text-center w-[10%]">Status</th>
                 </tr>
               </thead>
+              
               <tbody className="divide-y divide-gray-400 text-black">
                 {reportData.clients.length === 0 ? (
                   <tr>
@@ -185,14 +178,15 @@ const TotalCollection = () => {
                   </tr>
                 ) : (
                   reportData.clients.map((client, index) => (
-                    <tr key={client?._id || index} className="hover:bg-gray-50/50">
+                    <tr key={client?._id || index} className="hover:bg-gray-50/50 print-row">
                       <td className="py-2 px-2 border border-gray-400 text-center font-mono text-xs">
                         {formatSlNumber(client?.sl || index + 1)}
                       </td>
-                      <td className="py-2 px-2 border border-gray-400 text-center font-mono text-xs text-blue-600 break-all print:text-black">
+                      {/* IP Address এর গ্যাপ সুন্দরভাবে দেখানোর ব্যবস্থা */}
+                      <td className="py-2 px-2 border border-gray-400 text-center font-mono text-xs text-blue-600 whitespace-nowrap overflow-hidden text-ellipsis print:text-black">
                         {client?.ip || 'N/A'}
                       </td>
-                      <td className="py-2 px-3 border border-gray-400 font-medium break-words">
+                      <td className="py-2 px-3 border border-gray-400 font-medium text-[13px] break-words">
                         {client?.client_name}
                       </td>
                       <td className="py-2 px-3 border border-gray-400 text-xs text-gray-600 break-words print:text-black">
@@ -204,7 +198,6 @@ const TotalCollection = () => {
                       <td className="py-2 px-2 border border-gray-400 text-right font-mono font-medium">
                         {client?.amount}/=
                       </td>
-                      {/* স্ট্যাটাস বক্স: পেইড হলে শো করবে, আনপেইড হলে ঘরটি সম্পূর্ণ খালি থাকবে */}
                       <td className="py-2 px-2 border border-gray-400 text-center font-medium">
                         {client.isPaid ? (
                           <span className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-800 border border-green-300 print:text-black print:p-1">
@@ -223,17 +216,19 @@ const TotalCollection = () => {
         </div>
 
         {/* ⏬ 🖨️ একদম নিচে মার্জিনের কোণায় জেনারেটেড টেক্সট */}
-        <div className="mt-12 text-right text-xs italic text-gray-500 font-mono tracking-wide print:fixed print:bottom-1 print:right-1 print:text-black">
+        <div className="mt-12 text-right text-xs italic text-gray-500 font-mono tracking-wide print:fixed print:bottom-3 print:right-3 print:text-black">
           Generated by: Mahialam Rahat
         </div>
 
       </div>
 
-      {/* 🖨️ প্রিন্ট লেআউটের কাস্টম সিএসএস (৫ মিলিমিটার মার্জিন ফিক্সড) */}
+      {/* 🖨️ সাইড মার্জিন ১ মিলিমিটারে নামানো এবং ওপরে-নিচে ১৫ মিলিমিটার ফিক্সড রাখার সিএসএস */}
       <style jsx global>{`
         @media print {
           @page {
-            margin: 5mm 5mm 5mm 5mm; 
+            size: A4 portrait;
+            /* ⚡ ডানে ও বামে মার্জিন কমিয়ে মাত্র ১ মিলিমিটার (1mm) করা হলো */
+            margin: 15mm 1mm 15mm 1mm; 
           }
           .no-print, .btn, select, input, button {
             display: none !important;
@@ -249,7 +244,7 @@ const TotalCollection = () => {
             border: none !important; 
             max-w: 100% !important; 
             width: 100% !important; 
-            padding: 0 !important; 
+            padding: 0 1mm !important; 
             margin: 0 !important;
             min-h: 100vh !important;
           }
@@ -258,11 +253,19 @@ const TotalCollection = () => {
             table-layout: fixed !important; 
             width: 100% !important;
             border-collapse: collapse !important;
+            display: table !important;
+          }
+          thead {
+            display: table-header-group !important;
+          }
+          tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           th, td { 
             border: 0.5px solid #999999 !important; 
             color: #000000 !important; 
-            padding: 6px 4px !important;
+            padding: 5px 3px !important; 
             font-weight: normal !important;
           }
           th {
@@ -270,6 +273,10 @@ const TotalCollection = () => {
             background-color: #f3f4f6 !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+          }
+          .print-row {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
         }
       `}</style>
