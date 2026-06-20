@@ -9,6 +9,7 @@ import ClientReportActions from '@/components/ClientReportActions';
 import PaidBtns from '@/components/PaidBtns';
 import EditClientBtn from '@/components/EditClientBtn'; 
 import PromiseBtn from '@/components/PromiseBtn';
+import ReportBtn from '@/components/ReportBtn';
 
 export default function ResponsiveClientList() {
   const instance = useAxios();
@@ -209,6 +210,8 @@ export default function ResponsiveClientList() {
                   </div>
 
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 justify-end">
+                    {/* ⚡ নতুন রিপোর্ট বাটন */}
+                     <ReportBtn client={client} />
                     <EditClientBtn client={client} refetch={refetch} />
                     <PromiseBtn client={client} refetch={refetch} />
                     <PaidBtns client={client} refetch={refetch} />
@@ -268,6 +271,8 @@ export default function ResponsiveClientList() {
                         </td>
                         <td className="py-3 px-4 text-center no-print">
                           <div className="flex items-center justify-center gap-1.5">
+                            {/* ⚡ নতুন রিপোর্ট বাটন */}
+                            <ReportBtn client={client} />
                             <EditClientBtn client={client} refetch={refetch} />
                             <PromiseBtn client={client} refetch={refetch} />
                             <PaidBtns client={client} refetch={refetch} />
